@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PAYMENT YENZY</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: url('https://files.catbox.moe/w8629n.jpg') no-repeat center center fixed;
+      background-size: cover;
+      color: #000;
+      transition: background-color 0.3s, color 0.3s;
+      overflow-x: hidden;
+    }
+
+    canvas#snow, canvas#stars {
+      position: fixed;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+    }
+
+    canvas#snow { z-index: -1; }
+    canvas#stars { z-index: -2; }
+
+    .dark-mode {
+      background-color: rgba(0, 0, 0, 0.8);
+      color: #ffffff;
+    }
+
+    .container {
+      text-align: center;
+      padding: 20px;
+    }
+
+    .logo {
+      width: 100px;
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    input {
+      padding: 10px;
+      font-size: 16px;
+      width: 80%;
+      max-width: 300px;
+      margin: 5px auto;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    .button {
+      position: relative;
+      background-color: #007bff;
+      border: none;
+      color: white;
+      padding: 12px 20px;
+      margin: 10px;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      overflow: hidden;
+      transition: transform 0.2s, background 0.3s, box-shadow 0.3s;
+    }
+
+    .button:hover {
+      background-color: #0056b3;
+      transform: scale(1.05);
+      box-shadow: 0 0 10px #007bff, 0 0 20px #007bff;
+    }
+
+    .button:active::after {
+      width: 200%;
+      height: 200%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(1);
+      animation: ripple 0.6s linear;
+    }
+
+    .button::after {
+      content: "";
+      position: absolute;
+      background: rgba(255, 255, 255, 0.5);
+      border-radius: 50%;
+      transform: scale(0);
+      pointer-events: none;
+    }
+
+    @keyframes ripple {
+      to {
+        transform: translate(-50%, -50%) scale(2.5);
+        opacity: 0;
+      }
+    }
+
+    .mode-toggle {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: #333;
+      color: #fff;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 5px;
+      cursor: pointer;
+      z-index: 10;
+    }
+
+    .qris-img {
+      max-width: 200px;
+      margin: 20px auto;
+      display: block;
+    }
+
+    .loader {
+      border: 6px solid #f3f3f3;
+      border-top: 6px solid #007bff;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 10px auto;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .music-control {
+      margin-top: 20px;
+    }
+
+    audio { display: none; }
+
+    #info-bar {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.6);
+      color: white;
+      padding: 10px 15px;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 99;
+      line-height: 1.4em;
+    }
+
+    #progressBarContainer {
+      width: 100%;
+      height: 6px;
+      background: #ccc;
+      display: none;
+    }
+
+    #progressBar {
+      width: 0%;
+      height: 100%;
+      background: #007bff;
+      transition: width 0.2s linear;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="snow"></canvas>
+  <canvas id="stars"></canvas>
+
+  <div id="info-bar">
+    <div id="tanggal-jam">⌛</div>
+    <div id="baterai">🔋</div>
+  </div>
+
+  <button class="mode-toggle" onclick="toggleMode()">🌙</button>
+
+  <div class="container">
+    <img src="https://files.catbox.moe/w8629n.jpg" alt="Logo" class="logo" />
+
+    <div class="form-group">
+      <input type="text" id="nama" placeholder="Masukkan Nama" />
+      <input type="number" id="nominal" placeholder="Masukkan Nominal" />
+    </div>
+
+    <button class="button" onclick="bayar('DANA')">Bayar via DANA</button>
+    <button class="button" onclick="bayar('OVO')">Bayar via OVO</button>
+    <button class="button" onclick="bayar('GoPay')">Bayar via GoPay</button>
+    <button class="button" onclick="bayar('QRIS')">Bayar via QRIS</button>
+
+    <div id="loading" class="loader" style="display: none;"></div>
+    <div id="progressBarContainer">
+      <div id="progressBar"></div>
+    </div>
+
+    <img src="https://i.ibb.co/S7s6dqT/qris-contoh.png" alt="QRIS" class="qris-img" />
+
+    <div class="music-control">
+      <button class="button" onclick="toggleMusic()">🎵 Play/Pause Musik</button>
+      <audio id="bg-music" loop>
+        <source src="https://files.catbox.moe/g9cbob.mp3" type="audio/mpeg" />
+      </audio>
+    </div>
+  </div>
+
+  <audio id="click-sound">
+    <source src="https://www.soundjay.com/buttons/sounds/button-29.mp3" type="audio/mpeg" />
+  </audio>
+
+  <script>
+    const music = document.getElementById("bg-music");
+    const clickSound = document.getElementById("click-sound");
+
+    function toggleMode() {
+      document.body.classList.toggle("dark-mode");
+    }
+
+    function toggleMusic() {
+      music.paused ? music.play() : music.pause();
+    }
+
+    function playClickSound() {
+      clickSound.currentTime = 0;
+      clickSound.play();
+    }
+
+    function bayar(metode) {
+      playClickSound();
+      const nama = document.getElementById("nama").value;
+      const nominal = document.getElementById("nominal").value;
+      const loading = document.getElementById("loading");
+      const progressBar = document.getElementById("progressBar");
+      const progressBarContainer = document.getElementById("progressBarContainer");
+
+      if (!nama || !nominal) {
+        alert("Nama dan nominal harus diisi.");
+        return;
+      }
+
+      loading.style.display = "block";
+      progressBarContainer.style.display = "block";
+      progressBar.style.width = "0%";
+
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 5;
+        progressBar.style.width = progress + "%";
+        if (progress >= 100) clearInterval(interval);
+      }, 100);
+
+      setTimeout(() => {
+        loading.style.display = "none";
+        progressBarContainer.style.display = "none";
+        progressBar.style.width = "0%";
+
+        const pesan = `Halo saya ${nama}, saya ingin melakukan pembayaran sebesar Rp${nominal} via ${metode}`;
+        const url = `https://wa.me/6283895478440?text=${encodeURIComponent(pesan)}`;
+        window.open(url, "_blank");
+      }, 2000);
+    }
+
+    // Tanggal & Jam
+    function updateDateTime() {
+      const now = new Date();
+      const tanggalJam = now.toLocaleString('id-ID', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+      document.getElementById("tanggal-jam").innerText = `📅 ${tanggalJam}`;
+    }
+    setInterval(updateDateTime, 1000);
+    updateDateTime();
+
+    // Baterai
+    navigator.getBattery().then(function(battery) {
+      function updateBattery() {
+        const level = Math.round(battery.level * 100);
+        document.getElementById("baterai").innerText = `🔋 Baterai: ${level}%`;
+      }
+      updateBattery();
+      battery.addEventListener("levelchange", updateBattery);
+    });
+
+    // Efek Salju
+    const canvas = document.getElementById('snow');
+    const ctx = canvas.getContext('2d');
+    let width, height, snowflakes = [];
+
+    function resize() {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width;
+      canvas.height = height;
+    }
+
+    function createSnowflakes() {
+      const flakes = 100;
+      for (let i = 0; i < flakes; i++) {
+        snowflakes.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          r: Math.random() * 4 + 1,
+          d: Math.random() * flakes
+        });
+      }
+    }
+
+    function drawSnowflakes() {
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = 'white';
+      ctx.beginPath();
+      for (let i = 0; i < snowflakes.length; i++) {
+        const f = snowflakes[i];
+        ctx.moveTo(f.x, f.y);
+        ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2, true);
+      }
+      ctx.fill();
+      moveSnowflakes();
+    }
+
+    let angle = 0;
+
+    function moveSnowflakes() {
+      angle += 0.001;
+      for (let i = 0; i < snowflakes.length; i++) {
+        const f = snowflakes[i];
+        f.y += Math.cos(angle + f.d) + 0.5;
+        f.x += Math.sin(angle) * 0.5;
+        if (f.y > height) {
+          snowflakes[i] = {x: Math.random() * width, y: 0, r: f.r, d: f.d};
+        }
+      }
+    }
+
+    function animateSnow() {
+      drawSnowflakes();
+      requestAnimationFrame(animateSnow);
+    }
+
+    resize();
+    createSnowflakes();
+    animateSnow();
+    window.addEventListener('resize', resize);
+
+    // Efek Bintang
+    const canvasStars = document.getElementById("stars");
+    const ctxStars = canvasStars.getContext("2d");
+
+    function resizeStars() {
+      canvasStars.width = window.innerWidth;
+      canvasStars.height = window.innerHeight;
+    }
+
+    const stars = Array.from({ length: 200 }, () => ({
+      x: Math.random() * window.innerWidth,
+      y: Math.random() * window.innerHeight,
+      radius: Math.random() * 1.5,
+      alpha: Math.random(),
+    }));
+
+    function drawStars() {
+      ctxStars.clearRect(0, 0, canvasStars.width, canvasStars.height);
+      for (let star of stars) {
+        ctxStars.beginPath();
+        ctxStars.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+        ctxStars.fillStyle = `rgba(255, 255, 255, ${star.alpha})`;
+        ctxStars.fill();
+        star.y += 0.2;
+        if (star.y > canvasStars.height) {
+          star.y = 0;
+          star.x = Math.random() * canvasStars.width;
+        }
+      }
+      requestAnimationFrame(drawStars);
+    }
+
+    resizeStars();
+    drawStars();
+    window.addEventListener("resize", resizeStars);
+  </script>
+</body>
+</html>
